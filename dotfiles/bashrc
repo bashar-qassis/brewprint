@@ -1,0 +1,42 @@
+# Settings for interactive Bash sessions.
+case $- in
+  *i*) ;;
+  *) return ;;
+esac
+
+# A login file may already source ~/.bashrc before Brewprint's source line runs.
+[[ ${_brewprint_bashrc_loaded:-} == 1 ]] && return
+_brewprint_bashrc_loaded=1
+
+if [[ -z ${HOMEBREW_PREFIX:-} && -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv bash)"
+elif [[ -z ${HOMEBREW_PREFIX:-} && -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv bash)"
+fi
+
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate bash)"
+fi
+
+alias g='git'
+alias ga='git add'
+alias gc='git commit --verbose'
+alias gco='git checkout'
+alias gd='git diff'
+alias gl='git pull'
+alias gp='git push'
+alias gst='git status'
+
+_brewprint_git_branch() {
+  local branch
+  branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null) ||
+    branch=$(git rev-parse --short HEAD 2>/dev/null) || return 0
+  printf ' ‹%s›' "$branch"
+}
+
+PS1='╭─\[\e[1;32m\]\u@\h \[\e[1;34m\]\w\[\e[33m\]$(_brewprint_git_branch)\[\e[0m\]\n╰─\$ '
