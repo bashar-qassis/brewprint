@@ -32,6 +32,72 @@ alias gl='git pull'
 alias gp='git push'
 alias gst='git status'
 
+bootstrap_py() {
+  local reset=0 python=python arg
+
+  for arg in "$@"; do
+    case "$arg" in
+      -h|--help)
+        printf '%s\n' 'Usage: bootstrap_py [-r] [--three]' \
+          'Create and activate venv, load .env, and install requirements.txt if present.' \
+          '  -r       Recreate the existing virtual environment.' \
+          '  --three  Use python3 instead of python to create it.'
+        return 0
+        ;;
+      -r) reset=1 ;;
+      --three) python=python3 ;;
+      *) printf 'bootstrap_py: unknown option: %s\n' "$arg" >&2; return 2 ;;
+    esac
+  done
+
+  if [[ -L venv || ( -e venv && ! -f venv/pyvenv.cfg ) ]]; then
+    printf '%s\n' 'bootstrap_py: venv exists and is not a local Python virtual environment.' >&2
+    return 1
+  fi
+
+  if (( reset )) && [[ -d venv ]]; then
+    if [[ ${VIRTUAL_ENV:-} -ef venv ]]; then deactivate || return; fi
+    command -v "$python" >/dev/null || {
+      printf 'bootstrap_py: %s is unavailable. Install the project Python version first.\n' "$python" >&2
+      return 1
+    }
+    rm -r -- venv || return
+  fi
+
+  if [[ ! -d venv ]]; then
+    "$python" -m venv venv || return
+  fi
+  if [[ ! -f venv/bin/activate ]]; then
+    printf '%s\n' 'bootstrap_py: activation script is missing. Rerun with -r.' >&2
+    return 1
+  fi
+
+  if ! grep -Fq '# Brewprint: load project .env' venv/bin/activate; then
+    cat >> venv/bin/activate <<'ACTIVATE' || return
+
+# Brewprint: load project .env
+if [ -f "$VIRTUAL_ENV/../.env" ]; then
+    case $- in
+        *a*) . "$VIRTUAL_ENV/../.env" || return ;;
+        *)
+            set -a
+            if ! . "$VIRTUAL_ENV/../.env"; then
+                set +a
+                return 1
+            fi
+            set +a
+            ;;
+    esac
+fi
+ACTIVATE
+  fi
+
+  source venv/bin/activate || return
+  if [[ -f requirements.txt ]]; then
+    venv/bin/python -m pip install -r requirements.txt
+  fi
+}
+
 _brewprint_git_branch() {
   local branch
   branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null) ||

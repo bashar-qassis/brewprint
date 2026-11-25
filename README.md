@@ -21,6 +21,8 @@ Use `./bootstrap.sh --check` to see what setup is pending without installing any
 - **iTerm2 colors, fonts, and profile shortcuts** live in [config/iterm2/brewprint.json](config/iterm2/brewprint.json). Setup installs it as a Dynamic Profile based on the original Mac's iTerm2 settings. App-wide preferences stay in iTerm2.
 - **Development tools and runtimes** belong in each project's `mise.toml` or `.tool-versions`. Run `mise install` in that project. Brewprint activates mise in Bash. Global runtimes, database servers, and macOS preference changes are outside the default setup.
 
+For Python projects, run `bootstrap_py` from the project directory after installing its Python version. It creates and activates `venv/`, sources a shell-compatible `.env` if present, and installs `requirements.txt` if present. Only use it in projects whose `.env` you trust, since Bash executes its contents. Use `--three` to select `python3` or `-r` to recreate the environment.
+
 ## Recover a failed run
 
 The script prints its log path under `~/Library/Logs/Brewprint/`. Check the reported stage, resolve the issue, and run `./bootstrap.sh` again. If Command Line Tools could not be installed automatically, run `xcode-select --install` and finish the macOS installer before retrying. If Homebrew reports a conflict with an app installed by hand, review the existing app before moving it out of the way and retrying.
